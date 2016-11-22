@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Random;
 
@@ -75,19 +76,30 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 //bleUtils.sendData("haha", 0);
-            byte[] otg_code = new byte[5];
-                Random Random=new Random();
-                int i = Random.nextInt(20);
-                Log.e("123",""+i+"------随机数-------------");
-             otg_code[0] = (byte) i;
+            byte[] otg_code = new byte[8];
+              /*  Random Random=new Random();
+                int i = Random.nextInt(20);*/
+                otg_code[0] = (byte) 0x0b;
+                otg_code[1] = (byte) 0x00;
+                otg_code[2] = (byte) 0x05;
+                otg_code[3] = (byte) 0x00;
+                otg_code[4] = (byte) 0x84;
+                otg_code[5] = (byte) 0x00;
+                otg_code[6] = (byte) 0x00;
+                otg_code[7] = (byte) 0x08;
+           /*  otg_code[0] = (byte) 0x00;
             otg_code[1] = (byte) 0x84;
             otg_code[2] = (byte) 0x00;
             otg_code[3] = (byte) 0x00;
-            otg_code[4] = (byte) 0x08;
+            otg_code[4] = (byte) 0x08;*/
 
 
-                byte[] transmit = BlueLibs.Transmit(otg_code, 2000);
-                Log.e("123","发送指令"+transmit[0]+transmit[2]+"-----------");
+                byte[] transmit = BlueLibs.Transmit(otg_code, 5000);
+                if(transmit!=null){
+                    Toast.makeText(MainActivity.this,Util.byteToHexString(transmit),Toast.LENGTH_SHORT).show();
+                    Log.e("dabaozi","发送指令"+transmit[transmit.length-2]+"-----------"+transmit[transmit.length-1]+"-----------");
+                }
+
             }
         });
 

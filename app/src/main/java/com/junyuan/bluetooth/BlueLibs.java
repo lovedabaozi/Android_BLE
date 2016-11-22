@@ -20,6 +20,7 @@ import android.os.Message;
 import android.util.Log;
 
 import java.util.List;
+import java.util.UUID;
 
 
 public class BlueLibs {
@@ -62,7 +63,7 @@ public class BlueLibs {
         if (mGatt != null && mCharacteristic != null&& cmd!=null) {
             int num = (int) (time / 100);
             Resultcharacteristic = null;
-         /*   byte[] buffer = new byte[cmd.length + 3];
+          /*byte[] buffer = new byte[cmd.length + 3];
 
             buffer[0] = 0x0b;
             buffer[1] = (byte) (cmd.length >> 8);
@@ -85,7 +86,10 @@ public class BlueLibs {
                 }
             }
             Log.d(TAG, "是否发送成功" + isSend);
-            return Resultcharacteristic.getValue();
+            if(Resultcharacteristic!=null){
+                return Resultcharacteristic.getValue();
+            }
+
         }
         return  null;
     }
@@ -102,6 +106,17 @@ public class BlueLibs {
         if(mDevice==null){
             return  -1;
         }
+      /*  try {
+
+            // 配对
+            boolean brv = pair(mDevice, "000000");// String.valueOf(BluetoothDevice.PAIRING_VARIANT_PIN));
+            if (!brv) {
+                throw new Exception("pair return false");
+            }
+
+        } catch (Exception e) {
+            return -2;
+        }*/
         mGatt = mDevice.connectGatt(mContext, IsAuto, new GattCallback());
         mGatt.connect();
         int num= (int)time/100;
@@ -115,9 +130,11 @@ public class BlueLibs {
             if(mStatus!=-1){
                 break;
             }
-            if(mStatus==2){
-                return  0;
-            }
+        }
+        if(mStatus==2){
+            mStatus=0;
+
+            return  0;
         }
         return  mStatus;
     }
@@ -133,11 +150,12 @@ public class BlueLibs {
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             super.onConnectionStateChange(gatt, status, newState);
-
+        Log.e("onConnectionStateChange","连接状态==="+status);
             Log.d(TAG, "连接状态改变" + newState);
             if (newState == BluetoothGatt.STATE_CONNECTED) {//连接成功
                 Log.e(TAG, "连接成功");
                 mStatus = newState;
+
                 gatt.discoverServices();
             } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {//断开连接
                 mStatus=newState;
@@ -151,24 +169,31 @@ public class BlueLibs {
             List<BluetoothGattService> Services = gatt.getServices();
             for (BluetoothGattService service : Services) {
                 List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
-                for (BluetoothGattCharacteristic characteristic : characteristics) {
-                    Log.d(TAG, "characteristic" + characteristic.getUuid().toString());
-                    //   Toast.makeText(context,"发现服务="+characteristic.getUuid().toString(),Toast.LENGTH_SHORT).show();
-                    //   if (characteristic.getUuid().toString().equals("0000ff01-0000-1000-8000-00805f9b34fb")) {
-                    gatt.setCharacteristicNotification(characteristic, true);//设置开启接受蓝牙数据
-                    Log.e(TAG, "0000ff01-0000-1000-8000-00805f9b34fb");
-                    mCharacteristic = characteristic;
 
-
-                    // }
+             for (BluetoothGattCharacteristic characteristic : characteristics) {
+                    Log.d("dabaozi", "characteristic" + characteristic.getUuid().toString());
+               if(characteristic.getUuid().toString().equals("0783b03e-8535-b5a0-7140-a304d2495cba")){
+                   Log.e("dabaozi", "test-----"+characteristic.getUuid());
+                        mCharacteristic = characteristic;
+                   }
+                 if(characteristic.getUuid().toString().equals("0783b03e-8535-b5a0-7140-a304d2495cb8")){
+                     gatt.setCharacteristicNotification(characteristic, true);//设置开启接受蓝牙数据
+                     Log.e("dabaozi", "test-----"+characteristic.getUuid());
+                 }
                 }
             }
         }
 
         @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            super.onCharacteristicRead(gatt, characteristic, status);
+            Log.e("dabaozi","onCharacteristicRead-------"+characteristic.getValue());
+        }
+
+        @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
             Resultcharacteristic = characteristic;
-            Log.d(TAG, "onCharacteristicChanged");
+            Log.d("dabaozi", "onCharacteristicChanged");
             Log.e(TAG, "----");
             Log.d(TAG, "收到蓝牙发来数据：" + new String(characteristic.getValue()));
             String backData = new String(characteristic.getValue());
@@ -178,11 +203,20 @@ public class BlueLibs {
         }
 
         @Override
+        public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+            super.onMtuChanged(gatt, mtu, status);
+
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+               // this.supportedMTU = mtu;//local var to record MTU size
+            }
+        }
+
+        @Override
         public void onCharacteristicWrite(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicWrite(gatt, characteristic, status);
-            Resultcharacteristic = characteristic;
+          //  Resultcharacteristic = characteristic;
             String s = new String(characteristic.getValue());
-            Log.e(TAG, "onCharacteristicWrite--" + status + "---" + s);
+
             String s1 = Util.byteToHexString(characteristic.getValue());
             Log.e(TAG, s1 + "-onCharacteristicWrite---");
         }
@@ -236,5 +270,43 @@ public class BlueLibs {
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
         }
 
+    }
+
+
+    public static boolean pair(BluetoothDevice device, String strPsw)
+            throws Exception {
+        boolean result = false;
+        if (device.getBondState() != BluetoothDevice.BOND_BONDED) {
+            result = ClsUtils.setPin(device.getClass(), device, strPsw); // 手机和蓝牙采集器配对
+            result = true;
+            if (!result) {
+                throw new Exception("SetPIN Error");
+            } else {
+                // Log.d(TAG, "SetPIN Suc");
+                result = ClsUtils.createBond(device.getClass(), device);
+                if (!result) {
+                    throw new Exception("createBond Fail");
+                }
+            }
+
+            int i = 0;
+            for (i = 0; i < 50; i++) {
+                // Log.d(TAG, "getBondState:" + i);
+                Thread.sleep(100);
+                if (device.getBondState() == BluetoothDevice.BOND_BONDED) {
+                    // Log.d(TAG, "getBondState OK:" + i);
+                    result = true;
+                    break;
+                }
+            }
+
+            if (i == 50) {
+                result = false;
+            }
+        } else {
+            result = true;
+        }
+
+        return result;
     }
 }
