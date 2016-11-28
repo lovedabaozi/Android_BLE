@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
@@ -79,22 +80,31 @@ public class MainActivity extends AppCompatActivity {
             byte[] otg_code = new byte[8];
               /*  Random Random=new Random();
                 int i = Random.nextInt(20);*/
-                otg_code[0] = (byte) 0x0b;
+                otg_code[0] = (byte) 0x00;
+                otg_code[1] = (byte) 0x00;
+                otg_code[2] = (byte) 0x05;
+                otg_code[3] = (byte) 0x80;
+                otg_code[4] = (byte) 0x50;
+                otg_code[5] = (byte) 0x00;
+                otg_code[6] = (byte) 0x00;
+                otg_code[7] = (byte) 0x00;
+
+             /*   otg_code[0] = (byte) 0x00;
                 otg_code[1] = (byte) 0x00;
                 otg_code[2] = (byte) 0x05;
                 otg_code[3] = (byte) 0x00;
                 otg_code[4] = (byte) 0x84;
                 otg_code[5] = (byte) 0x00;
                 otg_code[6] = (byte) 0x00;
-                otg_code[7] = (byte) 0x08;
-           /*  otg_code[0] = (byte) 0x00;
+                otg_code[7] = (byte) 0x08;*/
+           /*otg_code[0] = (byte) 0x00;
             otg_code[1] = (byte) 0x84;
             otg_code[2] = (byte) 0x00;
             otg_code[3] = (byte) 0x00;
             otg_code[4] = (byte) 0x08;*/
 
 
-                byte[] transmit = BlueLibs.Transmit(otg_code, 5000);
+                byte[] transmit = BlueLibs.Transmit(otg_code, 8000);
                 if(transmit!=null){
                     Toast.makeText(MainActivity.this,Util.byteToHexString(transmit),Toast.LENGTH_SHORT).show();
                     Log.e("dabaozi","发送指令"+transmit[transmit.length-2]+"-----------"+transmit[transmit.length-1]+"-----------");
@@ -121,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 byte[] send = BleUtils.send("111",15000);
 
-                Log.e("123","MAinActivity="+send[0]+send[1]+"---");
+                Log.e("123","MAinActivity="+ Arrays.toString(send)+"---");
              /*   new Thread(){
                     @Override
                     public void run() {

@@ -15,10 +15,12 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,13 +29,15 @@ public class BlueLibs {
     private static BluetoothGatt mGatt;
     private static BluetoothGattCharacteristic mCharacteristic;
     private static BluetoothGattCharacteristic Resultcharacteristic;
+    private static  byte[] result=null;
     private  static BluetoothAdapter mBluetoothAdapter;
     private static Context mContext;
     private static int mStatus;
     private static boolean mScanning = false;
     private  static long SCAN_PERIOD = 10000;
-
+    private static BluetoothGattCharacteristic mReadCharacteristic;
    private  static  final  String TAG= "BlueLibs";
+    private   static  int tag;
     static Handler mHandler=new Handler(){
         @Override
         public void handleMessage(Message msg) {
@@ -63,16 +67,24 @@ public class BlueLibs {
         if (mGatt != null && mCharacteristic != null&& cmd!=null) {
             int num = (int) (time / 100);
             Resultcharacteristic = null;
-          /*byte[] buffer = new byte[cmd.length + 3];
+            result=null;
+          byte[] buffer = new byte[cmd.length + 3];
 
-            buffer[0] = 0x0b;
+          /*  buffer[0] = 0x0b;
             buffer[1] = (byte) (cmd.length >> 8);
             buffer[2] = (byte) cmd.length;
             System.arraycopy(cmd, 0, buffer, 3, cmd.length);*/
+            byte[] by=new byte[600];
+            for (int x=0;x<600;x++){
+                by[x]=0x00;
+            }
             mCharacteristic.setValue(cmd);
             Log.e(TAG, "发送数据=" + Util.byteToHexString(mCharacteristic.getValue()));
             boolean isSend = mGatt.writeCharacteristic(mCharacteristic);
+
+            tag = 0;
             Log.e(TAG, "是否发送成功==" + isSend);
+            Log.e(TAG, "===========2======" + isSend);
             for (int x = 0; x < num; x++) {
                 try {
                     Thread.sleep(100);
@@ -80,19 +92,20 @@ public class BlueLibs {
                     e.printStackTrace();
                 }
                 Log.e(TAG,x+"---------------------");
-                if (Resultcharacteristic != null) {
+                if (result != null) {
                     Log.e(TAG," 第几次循环"+ x+"-------------");
                     break;
                 }
             }
             Log.d(TAG, "是否发送成功" + isSend);
-            if(Resultcharacteristic!=null){
-                return Resultcharacteristic.getValue();
+            if(result!=null){
+                return result;
             }
 
         }
         return  null;
     }
+
 
     /**
      *  连接key
@@ -155,7 +168,12 @@ public class BlueLibs {
             if (newState == BluetoothGatt.STATE_CONNECTED) {//连接成功
                 Log.e(TAG, "连接成功");
                 mStatus = newState;
-
+               // gatt.requestMtu(110);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    Log.e(TAG,"----SDK_INT--");
+                   // boolean b = gatt.requestMtu(110);
+                  //  Log.e(TAG,b+"------");
+                }
                 gatt.discoverServices();
             } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {//断开连接
                 mStatus=newState;
@@ -177,6 +195,7 @@ public class BlueLibs {
                         mCharacteristic = characteristic;
                    }
                  if(characteristic.getUuid().toString().equals("0783b03e-8535-b5a0-7140-a304d2495cb8")){
+                     mReadCharacteristic=  characteristic;
                      gatt.setCharacteristicNotification(characteristic, true);//设置开启接受蓝牙数据
                      Log.e("dabaozi", "test-----"+characteristic.getUuid());
                  }
@@ -187,26 +206,49 @@ public class BlueLibs {
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
             super.onCharacteristicRead(gatt, characteristic, status);
-            Log.e("dabaozi","onCharacteristicRead-------"+characteristic.getValue());
+            Log.e("dabaozi","onCharacteristicRead-------"+Arrays.toString(characteristic.getValue()));
         }
-
+        int length;
+        byte[] all;
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, final BluetoothGattCharacteristic characteristic) {
-            Resultcharacteristic = characteristic;
+
+          /*  Resultcharacteristic = characteristic;
             Log.d("dabaozi", "onCharacteristicChanged");
+            Log.e("---------", Arrays.toString(characteristic.getValue()));
+
             Log.e(TAG, "----");
             Log.d(TAG, "收到蓝牙发来数据：" + new String(characteristic.getValue()));
             String backData = new String(characteristic.getValue());
             Log.e(TAG, "==========" + backData);
+*/
+            byte[] value = characteristic.getValue();
+        if(tag==0){
+            Log.e("onChanged-get-------",value[1]+"----"+value[2]);
 
+            length = (0xFF & value[1]) * 256 + (0xFF & value[2]);
+            length=length+3;
+            all = new byte[length];
+            Log.e(TAG,"length=="+length);
+
+        }
+            Log.e("dabaozi====",Arrays.toString(characteristic.getValue()));
+
+                System.arraycopy(characteristic.getValue(),0,all,tag,characteristic.getValue().length);
+                tag=tag+characteristic.getValue().length;
+            Log.e(TAG,Arrays.toString(all));
+            if(length==tag){
+                result=all;
+            }
 
         }
 
         @Override
         public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
             super.onMtuChanged(gatt, mtu, status);
-
+            Log.e(TAG,"mtu==="+mtu);
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.e(TAG,"mtu==="+mtu);
                // this.supportedMTU = mtu;//local var to record MTU size
             }
         }
@@ -216,9 +258,9 @@ public class BlueLibs {
             super.onCharacteristicWrite(gatt, characteristic, status);
           //  Resultcharacteristic = characteristic;
             String s = new String(characteristic.getValue());
-
             String s1 = Util.byteToHexString(characteristic.getValue());
             Log.e(TAG, s1 + "-onCharacteristicWrite---");
+            Log.e(TAG,characteristic.getValue().length+"指令长度");
         }
     }
 
