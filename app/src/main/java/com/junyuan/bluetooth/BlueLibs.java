@@ -70,6 +70,35 @@ public class BlueLibs {
             result=null;
           byte[] buffer = new byte[cmd.length + 3];
 
+            if(cmd.length<=20){
+                mCharacteristic.setValue(cmd);
+
+                boolean isSend = mGatt.writeCharacteristic(mCharacteristic);
+            }else{
+                int x=cmd.length/20;
+                int y=cmd.length%20;
+                byte [] step= new byte [20];
+                for (int i = 0; i <x; i++) {
+
+                    System.arraycopy(cmd, i*20, step,0, 20);
+                    mCharacteristic.setValue(step);
+                    //boolean isSend = mGatt.writeCharacteristic(mCharacteristic);
+
+                }
+
+                byte [] end=new byte[y];
+
+                System.arraycopy(cmd, x*20, end,0, y);
+                mCharacteristic.setValue(end);
+                boolean isSend = mGatt.writeCharacteristic(mCharacteristic);
+
+            }
+
+
+
+
+
+
           /*  buffer[0] = 0x0b;
             buffer[1] = (byte) (cmd.length >> 8);
             buffer[2] = (byte) cmd.length;
@@ -272,6 +301,9 @@ public class BlueLibs {
          try {
              if (mGatt != null) {
                  mGatt.disconnect();
+                 mGatt.close();
+                 //BluetoothGatt.close();
+
              }
          }catch ( Exception e){
              return  -1;
