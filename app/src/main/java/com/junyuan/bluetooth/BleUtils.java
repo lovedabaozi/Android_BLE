@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 /**
- * Created by JY on 2016/10/8.
+ * Created by  on 2016/10/8.
  */
 
 public class BleUtils {

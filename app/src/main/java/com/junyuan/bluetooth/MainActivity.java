@@ -73,6 +73,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+
         send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -104,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
             otg_code[4] = (byte) 0x08;*/
 
 
-                byte[] transmit = BlueLibs.Transmit(otg_code, 8000);
+                byte[] transmit = BlueLibs.Transmit(getRandombyte(100), 8000);
                 if(transmit!=null){
                     Toast.makeText(MainActivity.this,Util.byteToHexString(transmit),Toast.LENGTH_SHORT).show();
                     Log.e("dabaozi","发送指令"+transmit[transmit.length-2]+"-----------"+transmit[transmit.length-1]+"-----------");
@@ -189,6 +191,18 @@ public class MainActivity extends AppCompatActivity {
 
 
         }
+    }
+
+
+
+    public static byte[] getRandombyte(int x) {
+        byte[] b=new byte[x];
+        for(int i = 0; i < x; i++){
+            b[i]=(byte) i;
+        }
+
+        return b;
+
     }
 
 }
